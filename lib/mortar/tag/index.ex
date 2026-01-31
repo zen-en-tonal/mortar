@@ -2,6 +2,7 @@ defmodule Mortar.TagIndex do
   use Hume.Projection, store: Mortar.Event
 
   alias :trie, as: Trie
+  alias Mortar.Snapshot
 
   @type t :: Trie.trie()
 
@@ -82,11 +83,11 @@ defmodule Mortar.TagIndex do
 
   @impl true
   def last_snapshot(_via_tuple) do
-    nil
+    Snapshot.get("tag_index")
   end
 
   @impl true
-  def persist_snapshot(projection, snapshot) do
-    :ok
+  def persist_snapshot(_projection, snapshot) do
+    Snapshot.put("tag_index", snapshot)
   end
 end
