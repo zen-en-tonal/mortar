@@ -35,6 +35,12 @@ defmodule Mortar.Tag do
   """
   def exists?(tag_name), do: TagIndex.exists?(tag_name)
 
+  @doc """
+  Returns a list of suggested tags based on the given prefix.
+  Each suggestion is a tuple of `{tag_name, count}`.
+  """
+  def suggest(prefix, top_n \\ 10), do: TagIndex.suggest(prefix, top_n)
+
   @impl true
   def init_state({__MODULE__, tag_name}) do
     {:ok, bitset} = RoaringBitset.new()
