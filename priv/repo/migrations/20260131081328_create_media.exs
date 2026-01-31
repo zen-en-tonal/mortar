@@ -2,7 +2,7 @@ defmodule Mortar.Repo.Migrations.CreateMedia do
   use Ecto.Migration
 
   def change do
-    create table(:media) do
+    create table(:medias) do
       add :file_name, :string, null: true
       add :file_type, :string, null: false
       add :file_size, :integer, null: false
@@ -13,6 +13,6 @@ defmodule Mortar.Repo.Migrations.CreateMedia do
       timestamps()
     end
 
-    create unique_index(:media, [:md5])
+    create unique_index(:medias, [:md5])
   end
 end

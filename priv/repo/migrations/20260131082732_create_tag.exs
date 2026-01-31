@@ -5,6 +5,7 @@ defmodule Mortar.Repo.Migrations.CreateTag do
     create table(:tags) do
       add :name, :string, null: false
       add :bitmap, :binary, null: false
+      add :last_seq, :integer, null: false
       timestamps()
     end
 

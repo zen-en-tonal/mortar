@@ -10,7 +10,9 @@ defmodule Mortar.Application do
     children = [
       # Starts a worker by calling: Mortar.Worker.start_link(arg)
       # {Mortar.Worker, arg}
-      {Mortar.Repo, []}
+      {Mortar.Repo, []},
+      {Task.Supervisor, name: Mortar.TaskSupervisor},
+      {Mortar.TagSupervisor, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

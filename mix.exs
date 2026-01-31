@@ -30,7 +30,8 @@ defmodule Mortar.MixProject do
       {:ex_doc, "~> 0.30", only: :dev, runtime: false},
       {:jason, "~> 1.4"},
       {:ecto_sql, "~> 3.13"},
-      {:postgrex, ">= 0.0.0"}
+      {:postgrex, ">= 0.0.0"},
+      {:hume, "~> 0.0.1"}
     ]
   end
 end
