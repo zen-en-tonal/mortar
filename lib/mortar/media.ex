@@ -96,7 +96,7 @@ defmodule Mortar.Media do
       |> Enum.map(&String.trim/1)
       |> Enum.uniq()
 
-    set = put_in(set, [:tag_strings], Enum.join(compose_metatags(set) ++ tags, " "))
+    set = put_in(set, [:tag_strings], Enum.join(tags, " "))
 
     with :ok <- Storage.put(set.md5, binary),
          {:ok, record} <- Schema.changeset(%Schema{}, set) |> Repo.insert() do
