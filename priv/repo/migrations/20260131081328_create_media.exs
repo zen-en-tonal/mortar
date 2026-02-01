@@ -8,8 +8,7 @@ defmodule Mortar.Repo.Migrations.CreateMedia do
       add :file_size, :integer, null: false
       add :source, :string, null: true
       add :md5, :string, null: false
-      add :tag_strings, :string, null: false
-      add :uploaded_at, :utc_datetime_usec, null: false
+      add :tag_strings, :string, null: true
       timestamps()
     end
 

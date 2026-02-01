@@ -1,6 +1,7 @@
 defmodule Mortar.Tag do
   use Hume.Projection, store: Mortar.Event
 
+  alias Mortar.Event
   alias Mortar.TagSupervisor
   alias Mortar.TagIndex
   alias Mortar.Repo

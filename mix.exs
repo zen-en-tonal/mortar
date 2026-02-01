@@ -32,8 +32,8 @@ defmodule Mortar.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:hume, "~> 0.0.1"},
-      {:trie,
-       git: "https://github.com/okeuday/trie.git", ref: "0cf9c913b5e0f39a46c763a2168077d2c4dfd0e9"}
+      {:trie, "~> 2.0"},
+      {:infer, "~> 0.2.6"}
     ]
   end
 end

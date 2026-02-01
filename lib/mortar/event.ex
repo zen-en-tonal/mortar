@@ -35,13 +35,8 @@ defmodule Mortar.Event do
   @doc """
   Publishes an event to the event stream.
   """
-  @spec publish(invalid_event()) :: {:error, Error.t()}
-  @spec publish(event) :: {:ok, event} | {:error, term()} when event: t()
+  @spec publish(event) :: {:ok, event} | {:error, term()} when event: t() | [t()]
   def publish(event)
-
-  def publish({:invalid, reason}) do
-    {:error, Error.invalid(reason)}
-  end
 
   def publish(event) do
     Hume.publish(__MODULE__, stream(), event)

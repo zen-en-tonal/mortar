@@ -30,10 +30,12 @@ defmodule Mortar.TagIndex do
     state = Hume.state(__MODULE__)
     prefix = String.to_charlist(prefix)
 
-    Trie.fetch_keys_similar(prefix, state)
-    |> Enum.map(fn {tag_charlist, stat} ->
-      {to_string(tag_charlist), stat[:count]}
-    end)
+    Trie.foldr_similar(
+      prefix,
+      fn key, val, acc -> [{to_string(key), val[:count]} | acc] end,
+      [],
+      state
+    )
     |> Enum.sort_by(fn {_tag, count} -> -count end)
     |> Enum.take(top_n)
   end
