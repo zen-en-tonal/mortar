@@ -35,7 +35,10 @@ defmodule Mortar.MixProject do
       {:postgrex, ">= 0.0.0"},
       {:hume, "~> 0.0.1"},
       {:trie, "~> 2.0"},
-      {:infer, "~> 0.2.6"}
+      {:infer, "~> 0.2.6"},
+      {:bandit, "~> 1.10"},
+      {:ex_image_info, "~> 1.0"},
+      {:rambo, "~> 0.3"}
     ]
   end
 
