@@ -216,17 +216,16 @@ defmodule Mortar.Media do
   @spec identify(binary()) :: {:ok, info :: keyword()} | {:error, term()}
   def identify(bin) do
     case infer_type(bin) do
-      :unknown ->
-        {:error, :unsupported_media_type}
-
       {type, ext} when type in [:image, :audio, :video] ->
         case FFProbe.extract(bin) do
           {:ok, data} ->
+            data = put_in(data, ["size"], byte_size(bin))
+
             info = [
               type: type,
               ext: ext,
               size: byte_size(bin),
-              metadata: extract_metadata(type, put_in(data, ["size"], byte_size(bin)))
+              metadata: extract_metadata(type, data)
             ]
 
             {:ok, info}
@@ -241,13 +240,19 @@ defmodule Mortar.Media do
 
             {:ok, info}
         end
+
+      :unknown ->
+        {:error, :unsupported_media_type}
+
+      _ ->
+        {:error, :unsupported_media_type}
     end
   end
 
   defp extract_metadata(:image, data) do
     streams = data["streams"] || []
-    width = get_in(streams, [Access.at(0), "codec_width"]) || 0
-    height = get_in(streams, [Access.at(0), "codec_height"]) || 0
+    width = get_in(streams, [Access.at(0), "width"]) |> parse_number()
+    height = get_in(streams, [Access.at(0), "height"]) |> parse_number()
 
     %{
       "width" => width,
@@ -383,14 +388,15 @@ defmodule Mortar.Media do
     end
   end
 
-  defp parse_number(nil), do: nil
+  defp parse_number(x, default \\ 0)
+  defp parse_number("", default), do: default
+  defp parse_number(nil, default), do: default
+  defp parse_number(num, _default) when is_number(num), do: num
 
-  defp parse_number(str) when is_binary(str) do
+  defp parse_number(str, default) when is_binary(str) do
     case Float.parse(str) do
       {num, _} -> num
-      :error -> nil
+      :error -> default
     end
   end
-
-  defp parse_number(num) when is_number(num), do: num
 end
