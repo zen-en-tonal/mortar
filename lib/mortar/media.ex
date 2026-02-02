@@ -103,6 +103,7 @@ defmodule Mortar.Media do
       ((attrs[:tags] || []) ++ compose_metatags(set))
       |> Enum.map(&String.trim/1)
       |> Enum.uniq()
+      |> Enum.filter(&(&1 != ""))
 
     set = put_in(set, [:tag_strings], Enum.join(tags, " "))
 
@@ -128,7 +129,7 @@ defmodule Mortar.Media do
 
       {:ok, media}
     else
-      {:error, reason} -> {:error, reason}
+      {:error, %Ecto.Changeset{} = set} -> {:error, set.errors}
     end
   end
 

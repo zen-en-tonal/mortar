@@ -4,7 +4,12 @@ defmodule Mortar.Web.Danbooru do
   alias Mortar.Storage
   alias Mortar.Media
 
-  plug(Plug.Parsers, parsers: [:urlencoded, {:json, json_decoder: Jason}])
+  plug(Plug.Parsers,
+    parsers: [:json, :urlencoded, :multipart],
+    pass: ["*/*"],
+    json_decoder: Jason
+  )
+
   plug(:match)
   plug(:dispatch)
 
@@ -39,6 +44,41 @@ defmodule Mortar.Web.Danbooru do
       {:error, reason} ->
         conn
         |> send_resp(500, "Error fetching medias: #{reason}")
+    end
+  end
+
+  post "/posts.json" do
+    file = conn.params["file"]
+    tags = (conn.params["tags"] || "") |> String.split(" ")
+    source = conn.params["source"] || ""
+    name = conn.params["name"] || ""
+
+    attrs = [
+      file: file,
+      tags: tags,
+      source: source,
+      name: name
+    ]
+
+    if is_nil(file) do
+      conn
+      |> send_resp(400, "File parameter is required")
+    else
+      case Media.upload(File.read!(file.path), attrs) do
+        {:ok, media} ->
+          body =
+            media
+            |> parse_media()
+            |> Jason.encode!()
+
+          conn
+          |> put_resp_content_type("application/json")
+          |> send_resp(201, body)
+
+        {:error, reason} ->
+          conn
+          |> send_resp(500, "Error creating media: #{inspect(reason)}")
+      end
     end
   end
 

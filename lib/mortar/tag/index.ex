@@ -46,6 +46,10 @@ defmodule Mortar.TagIndex do
   end
 
   @impl true
+  def handle_event({:add_tag, _subject, %{"tag" => ""}}, state) do
+    {:ok, state}
+  end
+
   def handle_event({:add_tag, _subject, %{"tag" => tag_name}}, state) do
     tag_name = String.to_charlist(tag_name)
 
@@ -59,6 +63,10 @@ defmodule Mortar.TagIndex do
         state
       )
 
+    {:ok, state}
+  end
+
+  def handle_event({:remove_tag, _subject, %{"tag" => ""}}, state) do
     {:ok, state}
   end
 
