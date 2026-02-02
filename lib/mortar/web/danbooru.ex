@@ -42,6 +42,30 @@ defmodule Mortar.Web.Danbooru do
     end
   end
 
+  get "/posts/:id.json" do
+    id = String.to_integer(conn.params["id"])
+
+    case Media.get(id) do
+      {:ok, media} ->
+        body =
+          media
+          |> parse_media()
+          |> Jason.encode!()
+
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(200, body)
+
+      {:error, :not_found} ->
+        conn
+        |> send_resp(404, "Media not found")
+
+      {:error, reason} ->
+        conn
+        |> send_resp(500, "Error fetching media: #{reason}")
+    end
+  end
+
   get "/file/:filename" do
     [md5, ext] = conn.params["filename"] |> String.split(".")
 

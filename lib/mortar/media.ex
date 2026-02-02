@@ -132,6 +132,50 @@ defmodule Mortar.Media do
     end
   end
 
+  @doc """
+  Updates the media with the given attributes.
+  """
+  def update(%__MODULE__{} = media, attrs) do
+    tags =
+      case attrs[:tags] do
+        nil -> media.tags
+        ts -> ts
+      end
+
+    media
+    |> put_tags(tags)
+
+    res =
+      Repo.get(Schema, media.id)
+      |> Schema.changeset(%{
+        source: attrs[:source] || media.source,
+        file_name: attrs[:name] || media.name,
+        tag_strings: Enum.join(tags, " ")
+      })
+      |> Repo.update()
+
+    case res do
+      {:ok, record} ->
+        {:ok,
+         %__MODULE__{
+           id: record.id,
+           md5: record.md5,
+           type: record.file_type,
+           size: record.file_size,
+           ext: record.ext,
+           source: record.source,
+           name: record.file_name,
+           metadata: record.metadata,
+           tags: String.split(record.tag_strings, " ", trim: true),
+           created_at: record.inserted_at,
+           updated_at: record.updated_at
+         }}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   defp compose_metatags(set) do
     [
       "md5:#{set.md5}",
@@ -251,6 +295,32 @@ defmodule Mortar.Media do
       "duration" => duration
     }
     |> Map.merge(data)
+  end
+
+  @doc """
+  Fetches the media with the given ID.
+  """
+  def get(id) when is_integer(id) do
+    case Repo.get(Schema, id) do
+      nil ->
+        {:error, :not_found}
+
+      %Schema{} = rec ->
+        {:ok,
+         %__MODULE__{
+           id: rec.id,
+           md5: rec.md5,
+           type: rec.file_type,
+           size: rec.file_size,
+           ext: rec.ext,
+           source: rec.source,
+           name: rec.file_name,
+           metadata: rec.metadata,
+           tags: String.split(rec.tag_strings, " ", trim: true),
+           created_at: rec.inserted_at,
+           updated_at: rec.updated_at
+         }}
+    end
   end
 
   @doc """
