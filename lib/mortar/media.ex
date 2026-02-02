@@ -281,13 +281,13 @@ defmodule Mortar.Media do
       {:ok, ids} ->
         ids =
           case order do
-            :asc -> ids
-            :desc -> Enum.reverse(ids)
+            :asc -> ids |> Enum.sort(&<=/2)
+            :desc -> ids |> Enum.sort(&>=/2)
           end
           |> Enum.slice(offset, limit)
 
         medias =
-          Repo.all(from m in Schema, where: m.id in ^ids)
+          Repo.all(from m in Schema, where: m.id in ^ids, order_by: [{^order, :id}])
           |> Enum.map(fn
             %Schema{} = rec ->
               %__MODULE__{

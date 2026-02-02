@@ -24,7 +24,7 @@ defmodule Mortar.Snapshot do
   Retrieves a snapshot by name.
   """
   def get(name) do
-    case Repo.get_by(Schema, name: name) do
+    case Repo.get(Schema, name) do
       nil ->
         nil
 
@@ -37,10 +37,22 @@ defmodule Mortar.Snapshot do
   Stores a snapshot with the given name, sequence, and data.
   """
   def put(name, {sequence, data}) do
-    changeset =
-      %Schema{}
-      |> Schema.changeset(%{name: name, sequence: sequence, data: :erlang.term_to_binary(data)})
+    changes = %{sequence: sequence, data: :erlang.term_to_binary(data)}
 
-    Repo.insert_or_update(changeset)
+    res =
+      case Repo.get(Schema, name) do
+        nil -> %Schema{name: name}
+        snapshot -> snapshot
+      end
+      |> Schema.changeset(changes)
+      |> Repo.insert_or_update()
+
+    case res do
+      {:ok, _snapshot} ->
+        :ok
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 end
