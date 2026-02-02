@@ -2,6 +2,10 @@ defmodule Mortar.Media do
   alias Mortar.Event
   alias Mortar.Repo
   alias Mortar.Storage
+  alias Mortar.Query
+  alias Mortar.Tag
+
+  import Ecto.Query
 
   defstruct [
     :id,
@@ -112,6 +116,9 @@ defmodule Mortar.Media do
         }
         |> put_tags(tags)
 
+      Event.compose(:upload_media, media.id, %{})
+      |> Event.publish()
+
       {:ok, media}
     else
       {:error, reason} -> {:error, reason}
@@ -150,6 +157,54 @@ defmodule Mortar.Media do
 
       _ ->
         :unknown
+    end
+  end
+
+  @doc """
+  Queries media matching the given query.
+
+  Options:
+    * `:offset` - The offset to start from (default: `0`).
+    * `:limit` - The maximum number of results to return (default: `25`).
+    * `:order` - The order of results, either `:asc` or `:desc` (default: `:desc`).
+  """
+  @spec query(Query.t()) :: {:ok, [t()]} | {:error, term()}
+  def query(query, opts \\ []) do
+    offset = opts[:offset] || 0
+    limit = opts[:limit] || 25
+    order = opts[:order] || :desc
+
+    tags =
+      Query.require_tags(query)
+      |> Enum.map(&Tag.fetch/1)
+
+    case Query.eval(query, tags) do
+      {:ok, ids} ->
+        ids =
+          case order do
+            :asc -> ids
+            :desc -> Enum.reverse(ids)
+          end
+          |> Enum.slice(offset, limit)
+
+        Repo.all(from m in Schema, where: m.id in ^ids)
+        |> Enum.map(fn
+          %Schema{} = rec ->
+            %__MODULE__{
+              id: rec.id,
+              md5: rec.md5,
+              type: rec.file_type,
+              size: rec.file_size,
+              ext: rec.ext,
+              source: rec.source,
+              name: rec.file_name,
+              metadata: rec.metadata,
+              tags: String.split(rec.tag_strings, " ", trim: true)
+            }
+        end)
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end

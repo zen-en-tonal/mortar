@@ -1,12 +1,16 @@
 defmodule Mortar.Tag do
   use Hume.Projection, store: Mortar.Event
 
-  alias Mortar.Event
   alias Mortar.TagSupervisor
   alias Mortar.TagIndex
   alias Mortar.Repo
 
   defstruct [:name, :bitmap_ref]
+
+  @type t :: %__MODULE__{
+          name: binary(),
+          bitmap_ref: reference()
+        }
 
   defmodule Schema do
     use Ecto.Schema
@@ -42,6 +46,21 @@ defmodule Mortar.Tag do
   """
   def suggest(prefix, top_n \\ 10), do: TagIndex.suggest(prefix, top_n)
 
+  @doc """
+  Returns the Tag state for the given tag name.
+  If the tag does not exist, returns a new Tag with an empty bitmap.
+  """
+  def fetch(tag_name) do
+    case TagSupervisor.get_state(tag_name) do
+      nil ->
+        {:ok, empty_bitmap} = RoaringBitset.new()
+        %__MODULE__{name: tag_name, bitmap_ref: empty_bitmap}
+
+      %__MODULE__{} = state ->
+        state
+    end
+  end
+
   @impl true
   def init_state({__MODULE__, tag_name}) do
     {:ok, bitset} = RoaringBitset.new()
@@ -61,6 +80,17 @@ defmodule Mortar.Tag do
       when state.name == tag_name do
     {media_id, ""} = Integer.parse(subject)
     RoaringBitset.remove(state.bitmap_ref, media_id)
+    {:ok, state}
+  end
+
+  def handle_event({:upload_media, subject, _}, %__MODULE__{} = state)
+      when state.name == "__all__" do
+    {media_id, ""} = Integer.parse(subject)
+    RoaringBitset.insert(state.bitmap_ref, media_id)
+    {:ok, state}
+  end
+
+  def handle_event(_event, %__MODULE__{} = state) do
     {:ok, state}
   end
 

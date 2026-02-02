@@ -83,6 +83,24 @@ defmodule Mortar.TagIndex do
     end
   end
 
+  def handle_event({:upload_media, _subject, _}, state) do
+    state =
+      Trie.update(
+        "__all__" |> String.to_charlist(),
+        fn stat ->
+          put_in(stat, [:count], stat[:count] + 1)
+        end,
+        [count: 1],
+        state
+      )
+
+    {:ok, state}
+  end
+
+  def handle_event(_event, state) do
+    {:ok, state}
+  end
+
   @impl true
   def last_snapshot(_via_tuple) do
     Snapshot.get("tag_index")
