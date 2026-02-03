@@ -27,10 +27,10 @@ defmodule Mortar.Web.Danbooru do
     limit = parse_limit(conn.params["limit"])
     page = parse_page(conn.params["page"])
     offset = (page - 1) * limit
-    tags = conn.params["tags"] || ""
+    query = tags_to_query(conn.params["tags"])
     order = parse_order(conn.params["order"])
 
-    case Media.query(tags, limit: limit, offset: offset, order: order) do
+    case Media.query(query, limit: limit, offset: offset, order: order) do
       {:ok, medias} ->
         body =
           medias
@@ -123,6 +123,20 @@ defmodule Mortar.Web.Danbooru do
         conn
         |> send_resp(500, "Error fetching file: #{reason}")
     end
+  end
+
+  defp tags_to_query(""), do: "__all__"
+  defp tags_to_query(nil), do: "__all__"
+
+  defp tags_to_query(tags) when is_binary(tags) do
+    String.split(tags, " ", trim: true)
+    |> Enum.reduce("__all__", fn
+      "-" <> tag, acc ->
+        {:and, acc, {:not, tag}}
+
+      tag, acc ->
+        {:and, acc, tag}
+    end)
   end
 
   defp parse_page(""), do: 1
