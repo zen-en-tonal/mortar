@@ -88,8 +88,6 @@ defmodule Mortar.Event do
 
   @impl true
   def append_batch(_stream, events) do
-    IO.inspect(events, label: "Appending event batch")
-
     entries =
       events
       |> Hume.EventOrder.to_list()

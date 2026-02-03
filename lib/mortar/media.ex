@@ -179,7 +179,6 @@ defmodule Mortar.Media do
 
   defp compose_metatags(set) do
     [
-      "md5:#{set.md5}",
       "type:#{set.file_type}",
       "ext:#{set.ext}"
     ]
@@ -195,6 +194,8 @@ defmodule Mortar.Media do
       |> Enum.map(&Event.compose(:remove_tag, media.id, %{"tag" => &1}))
 
     Event.publish(to_add ++ to_remove)
+
+    Tag.queue_warm(tags)
 
     %{media | tags: tags}
   end
@@ -265,10 +266,10 @@ defmodule Mortar.Media do
     streams = data["streams"] || []
     format = data["format"] || %{}
 
-    bitrate = parse_number(get_in(format, ["bit_rate"])) || 0
-    bit_depth = parse_number(get_in(streams, [Access.at(0), "bits_per_sample"])) || 0
-    channels = parse_number(get_in(streams, [Access.at(0), "channels"])) || 0
-    sample_rate = parse_number(get_in(streams, [Access.at(0), "sample_rate"])) || 0
+    bitrate = parse_number(get_in(format, ["bit_rate"]))
+    bit_depth = parse_number(get_in(streams, [Access.at(0), "bits_per_sample"]))
+    channels = parse_number(get_in(streams, [Access.at(0), "channels"]))
+    sample_rate = parse_number(get_in(streams, [Access.at(0), "sample_rate"]))
 
     duration = data["size"] * 8 / (bitrate |> max(1))
 

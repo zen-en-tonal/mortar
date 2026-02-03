@@ -1,6 +1,7 @@
 defmodule Mortar.Tag do
   use Hume.Projection, store: Mortar.Event
 
+  alias Mortar.TagWarming
   alias Mortar.TagSupervisor
   alias Mortar.TagIndex
   alias Mortar.Repo
@@ -61,6 +62,33 @@ defmodule Mortar.Tag do
     end
   end
 
+  @doc """
+  Warms the tag by taking a snapshot of its current state.
+  If the tag does not exist, does nothing.
+  """
+  def warm(tag_name) do
+    if exists?(tag_name) do
+      TagSupervisor.take_snapshot(tag_name)
+    end
+
+    :ok
+  end
+
+  @doc """
+  Queues the tag for warming.
+  """
+  def queue_warm(tag_name) when is_binary(tag_name) do
+    TagWarming.queue_tag(tag_name)
+  end
+
+  def queue_warm(tags) when is_list(tags) do
+    Enum.each(tags, &TagWarming.queue_tag/1)
+  end
+
+  def warm_all_tag() do
+    TagWarming.queue_tag("__all__")
+  end
+
   @impl true
   def init_state({__MODULE__, tag_name}) do
     {:ok, bitset} = RoaringBitset.new()
@@ -107,23 +135,32 @@ defmodule Mortar.Tag do
 
   @impl true
   def persist_snapshot({__MODULE__, tag_name}, {last_seq, state}) do
-    case Repo.get_by(Schema, name: tag_name) do
-      nil ->
-        %Schema{}
-        |> Schema.changeset(%{
-          name: tag_name,
-          bitmap: state.bitmap_ref,
-          last_seq: last_seq
-        })
-        |> Repo.insert()
+    res =
+      case Repo.get_by(Schema, name: tag_name) do
+        nil ->
+          %Schema{}
+          |> Schema.changeset(%{
+            name: tag_name,
+            bitmap: state.bitmap_ref,
+            last_seq: last_seq
+          })
+          |> Repo.insert()
 
-      %Schema{} = schema ->
-        schema
-        |> Schema.changeset(%{
-          bitmap: state.bitmap_ref,
-          last_seq: last_seq
-        })
-        |> Repo.update()
+        %Schema{} = schema ->
+          schema
+          |> Schema.changeset(%{
+            bitmap: state.bitmap_ref,
+            last_seq: last_seq
+          })
+          |> Repo.update()
+      end
+
+    case res do
+      {:ok, _schema} ->
+        :ok
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 end

@@ -16,10 +16,17 @@ defmodule Mortar.TagIndex do
 
   @doc """
   Returns the count of items tagged with the given tag name.
+
+  If no tag name is provided, returns the total count of all tagged items.
   """
   def count(tag_name) do
     state = Hume.state(__MODULE__)
     Trie.fetch(String.to_charlist(tag_name), state)[:count] || 0
+  end
+
+  def count() do
+    state = Hume.state(__MODULE__)
+    Trie.fetch(String.to_charlist("__all__"), state)[:count] || 0
   end
 
   @doc """
@@ -38,6 +45,29 @@ defmodule Mortar.TagIndex do
     )
     |> Enum.sort_by(fn {_tag, count} -> -count end)
     |> Enum.take(top_n)
+  end
+
+  @doc """
+  Returns a list of tags that are reported by less than 68% of the total medias.
+  Each entry is a tuple of `{tag_name, count}`.
+  """
+  def minority_reported_tags(th_rate \\ 0.32) when th_rate > 0.0 and th_rate <= 1.0 do
+    state = Hume.state(__MODULE__)
+    total_medias = Trie.fetch(String.to_charlist("__all__"), state)[:count] || 0
+    th = (total_medias * th_rate) |> round()
+
+    Trie.fold(
+      fn key, val, acc ->
+        if val[:count] < th do
+          [{to_string(key), val[:count]} | acc]
+        else
+          acc
+        end
+      end,
+      [],
+      state
+    )
+    |> Enum.sort_by(fn {_tag, count} -> count end)
   end
 
   @impl true

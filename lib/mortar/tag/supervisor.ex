@@ -5,6 +5,7 @@ defmodule Mortar.TagSupervisor do
   alias Mortar.TagIndex
   alias Mortar.TagRegistry
   alias Mortar.TagDynamicSupervisor
+  alias Mortar.TagWarming
   alias Mortar.Event
   alias Mortar.Error
 
@@ -83,6 +84,15 @@ defmodule Mortar.TagSupervisor do
     end
   end
 
+  @doc """
+  Takes a snapshot of the tag projector for the given tag name.
+  """
+  def take_snapshot(tag_name) do
+    pid = ensure_tag_started(tag_name)
+    Hume.Projection.take_snapshot(pid, :infinity)
+    Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(10))
+  end
+
   @impl true
   def init(:ok) do
     children = [
@@ -90,7 +100,8 @@ defmodule Mortar.TagSupervisor do
       {PartitionSupervisor,
        child_spec: DynamicSupervisor, name: TagDynamicSupervisor, partitions: 4},
       {Mortar.Hibernate, name: TagHibernate},
-      {TagIndex, name: TagIndex, stream: Event.stream(), projection: TagIndex}
+      {TagIndex, name: TagIndex, stream: Event.stream(), projection: TagIndex},
+      {TagWarming, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
