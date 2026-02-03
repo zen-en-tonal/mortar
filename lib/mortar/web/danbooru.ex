@@ -152,8 +152,6 @@ defmodule Mortar.Web.Danbooru do
   defp parse_order(_), do: :desc
 
   defp parse_media(%Media{} = media) do
-    IO.inspect(media, label: "Parsing media")
-
     %{
       id: media.id,
       tag_string: media.tags |> Enum.join(" "),
