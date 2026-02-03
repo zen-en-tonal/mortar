@@ -8,9 +8,21 @@ defmodule Mortar.Web do
   use Plug.ErrorHandler
 
   plug(Plug.Logger)
-  plug(Application.compile_env(:mortar, Mortar.Web)[:adapter])
+
+  def endpoint do
+    [
+      plug: __MODULE__,
+      port: Application.get_env(:mortar, Mortar.Endpoint)[:port],
+      ip: Application.get_env(:mortar, Mortar.Endpoint)[:ip]
+    ]
+  end
 
   def host do
-    struct!(URI, Application.get_env(:mortar, Mortar.Web)[:url])
+    struct!(URI, Application.get_env(:mortar, Mortar.Endpoint)[:url])
+  end
+
+  def call(conn, opts) do
+    adapter = Application.get_env(:mortar, Mortar.Endpoint)[:adapter]
+    adapter.call(conn, opts)
   end
 end

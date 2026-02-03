@@ -92,11 +92,13 @@ defmodule Mortar.Event do
         order_by: [asc: e.sequence],
         select: e
 
-    Repo.all(query)
-    |> Enum.map(fn e ->
-      {e.sequence, {String.to_atom(e.kind), e.subject, e.payload}}
-    end)
-    |> Hume.EventOrder.ensure_ordered()
+    events =
+      Repo.all(query)
+      |> Enum.map(fn e ->
+        {e.sequence, {String.to_atom(e.kind), e.subject, e.payload}}
+      end)
+
+    {:ordered, events}
   end
 
   @impl true

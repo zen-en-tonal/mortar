@@ -34,7 +34,7 @@ defmodule Mortar.TagWarming do
     Task.Supervisor.async_stream_nolink(
       TaskSupervisor,
       state,
-      &Tag.warm/1,
+      fn tag -> {Tag.warm(tag), tag} end,
       timeout: :infinity
     )
     |> Stream.run()
@@ -54,7 +54,7 @@ defmodule Mortar.TagWarming do
     {:noreply, state}
   end
 
-  def handle_info(_, state) do
+  def handle_info({:DOWN}, state) do
     {:noreply, state}
   end
 

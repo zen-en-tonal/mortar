@@ -106,6 +106,55 @@ defmodule Mortar.Web.Danbooru do
     end
   end
 
+  put "/posts/:id.json" do
+    id = String.to_integer(conn.params["id"])
+
+    case Media.get(id) do
+      {:ok, media = %Media{}} ->
+        new_tags =
+          case conn.params["tags"] do
+            nil -> media.tags
+            tags when is_binary(tags) -> String.split(tags, " ", trim: true)
+          end
+
+        new_source =
+          case conn.params["source"] do
+            nil -> media.source
+            source when is_binary(source) -> source
+          end
+
+        new_name =
+          case conn.params["name"] do
+            nil -> media.name
+            name when is_binary(name) -> name
+          end
+
+        case Media.update(media, tags: new_tags, name: new_name, source: new_source) do
+          {:ok, updated_media} ->
+            body =
+              updated_media
+              |> parse_media()
+              |> Jason.encode!()
+
+            conn
+            |> put_resp_content_type("application/json")
+            |> send_resp(200, body)
+
+          {:error, reason} ->
+            conn
+            |> send_resp(500, "Error updating tags: #{inspect(reason)}")
+        end
+
+      {:error, :not_found} ->
+        conn
+        |> send_resp(404, "Media not found")
+
+      {:error, reason} ->
+        conn
+        |> send_resp(500, "Error fetching media: #{reason}")
+    end
+  end
+
   get "/file/:filename" do
     [md5, ext] = conn.params["filename"] |> String.split(".")
 

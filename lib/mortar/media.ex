@@ -140,7 +140,7 @@ defmodule Mortar.Media do
     tags =
       case attrs[:tags] do
         nil -> media.tags
-        ts -> ts
+        ts -> ts |> Enum.map(&String.trim/1) |> Enum.uniq() |> Enum.filter(&(&1 != ""))
       end
 
     media
@@ -185,6 +185,12 @@ defmodule Mortar.Media do
   end
 
   defp put_tags(media, tags) do
+    tags =
+      tags
+      |> Enum.map(&String.trim/1)
+      |> Enum.uniq()
+      |> Enum.filter(&(&1 != ""))
+
     to_add =
       (tags -- media.tags)
       |> Enum.map(&Event.compose(:add_tag, media.id, %{"tag" => &1}))

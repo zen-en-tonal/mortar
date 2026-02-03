@@ -4,10 +4,30 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
+      POSTGRES_DB: mortar
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: always
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/mortar
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    restart: always
+    volumes:
+      - data:/data
+    entrypoint: >-
+      sh -c '
+
+        /app/bin/mortar eval "Mortar.Release.migrate()" &&
+        /app/bin/mortar start
+      '
 volumes:
   db_data:
+  data:

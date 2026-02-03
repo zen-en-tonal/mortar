@@ -5,8 +5,6 @@ defmodule Mortar.Application do
 
   use Application
 
-  @endpoint Application.compile_env!(:mortar, Mortar.Endpoint)
-
   @impl true
   def start(_type, _args) do
     children = [
@@ -16,7 +14,7 @@ defmodule Mortar.Application do
       {Task.Supervisor, name: Mortar.TaskSupervisor},
       {Cachex, [Mortar.EventCache]},
       {Mortar.TagSupervisor, []},
-      {Bandit, @endpoint}
+      {Bandit, Mortar.Web.endpoint()}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

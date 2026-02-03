@@ -74,11 +74,11 @@ defmodule Mortar.TagSupervisor do
   Returns the state of the tag projector for the given tag name,
   or `nil` if the tag does not exist.
   """
-  def get_state(tag_name) do
+  def get_state(tag_name, timeout \\ 5_000) do
     if TagIndex.exists?(tag_name) do
       pid = ensure_tag_started(tag_name)
-      Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(10))
-      Hume.state(pid)
+      Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(5))
+      Hume.state(pid, timeout)
     else
       nil
     end
@@ -90,7 +90,7 @@ defmodule Mortar.TagSupervisor do
   def take_snapshot(tag_name) do
     pid = ensure_tag_started(tag_name)
     Hume.Projection.take_snapshot(pid, :infinity)
-    Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(10))
+    Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(5))
   end
 
   @impl true

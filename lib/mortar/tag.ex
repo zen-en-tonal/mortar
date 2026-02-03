@@ -52,13 +52,34 @@ defmodule Mortar.Tag do
   If the tag does not exist, returns a new Tag with an empty bitmap.
   """
   def fetch(tag_name) do
-    case TagSupervisor.get_state(tag_name) do
-      nil ->
-        {:ok, empty_bitmap} = RoaringBitset.new()
-        %__MODULE__{name: tag_name, bitmap_ref: empty_bitmap}
+    task =
+      Task.async(fn ->
+        case TagSupervisor.get_state(tag_name, :infinity) do
+          nil ->
+            {:ok, empty_bitmap} = RoaringBitset.new()
+            %__MODULE__{name: tag_name, bitmap_ref: empty_bitmap}
 
-      %__MODULE__{} = state ->
-        state
+          %__MODULE__{} = state ->
+            state
+        end
+      end)
+
+    case Task.yield(task, 3_000) || Task.ignore(task) do
+      nil ->
+        case last_snapshot({__MODULE__, tag_name}) do
+          {_offset, %__MODULE__{} = state} ->
+            state
+
+          nil ->
+            {:ok, empty_bitmap} = RoaringBitset.new()
+            %__MODULE__{name: tag_name, bitmap_ref: empty_bitmap}
+        end
+
+      {:ok, result} ->
+        result
+
+      {:exit, reason} ->
+        raise "Failed to fetch tag #{tag_name}: #{inspect(reason)}"
     end
   end
 
