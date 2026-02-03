@@ -3,7 +3,7 @@ defmodule Mortar.Storage.LocalTest do
 
   alias Mortar.Storage.Local
 
-  @test_storage_path "test/tmp/storage"
+  @test_storage_path "tmp/storage"
   @test_key "abcdef1234567890abcdef1234567890"
   @test_value "test binary data"
 

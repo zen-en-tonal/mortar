@@ -7,5 +7,4 @@ config :mortar, Mortar.Repo,
   hostname: "localhost",
   pool: Ecto.Adapters.SQL.Sandbox
 
-config :mortar, Mortar.Storage.Local,
-  storage_path: "test/tmp/storage"
+config :mortar, Mortar.Storage.Local, storage_path: "tmp/storage"
