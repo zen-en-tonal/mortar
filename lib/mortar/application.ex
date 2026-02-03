@@ -14,6 +14,7 @@ defmodule Mortar.Application do
       # {Mortar.Worker, arg}
       {Mortar.Repo, []},
       {Task.Supervisor, name: Mortar.TaskSupervisor},
+      {Cachex, [Mortar.EventCache]},
       {Mortar.TagSupervisor, []},
       {Bandit, @endpoint}
     ]

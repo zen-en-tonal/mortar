@@ -6,7 +6,6 @@ defmodule Mortar.TagWarming do
   alias Mortar.TaskSupervisor
 
   @interval :timer.seconds(10)
-  @queue_minority_interval :timer.minutes(30)
   @queue_majority_interval :timer.minutes(5)
 
   def start_link(_args) do
@@ -20,7 +19,6 @@ defmodule Mortar.TagWarming do
   @impl true
   def init(_state) do
     schedule_warming()
-    schedule_queue_minotiry()
     schedule_queue_majority()
 
     {:ok, MapSet.new()}
@@ -46,16 +44,6 @@ defmodule Mortar.TagWarming do
     {:noreply, MapSet.new()}
   end
 
-  def handle_info(:queue_minority_tags, state) do
-    minority_tags =
-      TagIndex.filter_by_count({:<, 0.32})
-      |> Enum.map(fn {tag, _} -> tag end)
-
-    Enum.each(minority_tags, &queue_tag/1)
-    schedule_queue_minotiry()
-    {:noreply, state}
-  end
-
   def handle_info(:queue_majority_tags, state) do
     majority_tags =
       TagIndex.filter_by_count({:>=, 0.32})
@@ -71,9 +59,6 @@ defmodule Mortar.TagWarming do
   end
 
   defp schedule_warming, do: Process.send_after(self(), :warm_tags, @interval)
-
-  defp schedule_queue_minotiry,
-    do: Process.send_after(self(), :queue_minority_tags, @queue_minority_interval)
 
   defp schedule_queue_majority,
     do: Process.send_after(self(), :queue_majority_tags, @queue_majority_interval)

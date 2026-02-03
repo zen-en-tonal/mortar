@@ -38,7 +38,8 @@ defmodule Mortar.MixProject do
       {:infer, "~> 0.2.6"},
       {:bandit, "~> 1.10"},
       {:ex_image_info, "~> 1.0"},
-      {:rambo, "~> 0.3"}
+      {:rambo, "~> 0.3"},
+      {:cachex, "~> 4.0"}
     ]
   end
 
