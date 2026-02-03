@@ -6,7 +6,8 @@ defmodule Mortar.TagWarming do
   alias Mortar.TaskSupervisor
 
   @interval :timer.seconds(10)
-  @queue_minority_interval :timer.minutes(5)
+  @queue_minority_interval :timer.minutes(30)
+  @queue_majority_interval :timer.minutes(5)
 
   def start_link(_args) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
@@ -19,7 +20,8 @@ defmodule Mortar.TagWarming do
   @impl true
   def init(_state) do
     schedule_warming()
-    # schedule_queue_minotiry()
+    schedule_queue_minotiry()
+    schedule_queue_majority()
 
     {:ok, MapSet.new()}
   end
@@ -46,13 +48,21 @@ defmodule Mortar.TagWarming do
 
   def handle_info(:queue_minority_tags, state) do
     minority_tags =
-      TagIndex.minority_reported_tags()
+      TagIndex.filter_by_count({:<, 0.32})
       |> Enum.map(fn {tag, _} -> tag end)
 
     Enum.each(minority_tags, &queue_tag/1)
-
     schedule_queue_minotiry()
+    {:noreply, state}
+  end
 
+  def handle_info(:queue_majority_tags, state) do
+    majority_tags =
+      TagIndex.filter_by_count({:>=, 0.32})
+      |> Enum.map(fn {tag, _} -> tag end)
+
+    Enum.each(majority_tags, &queue_tag/1)
+    schedule_queue_majority()
     {:noreply, state}
   end
 
@@ -64,4 +74,7 @@ defmodule Mortar.TagWarming do
 
   defp schedule_queue_minotiry,
     do: Process.send_after(self(), :queue_minority_tags, @queue_minority_interval)
+
+  defp schedule_queue_majority,
+    do: Process.send_after(self(), :queue_majority_tags, @queue_majority_interval)
 end

@@ -48,18 +48,35 @@ defmodule Mortar.TagIndex do
   end
 
   @doc """
-  Returns a list of tags that are reported by less than 68% of the total medias.
+  Returns a list of tags filtered by the given count condition.
+
+  The condition should be a tuple of `{op, th_rate}` where `op` is
+  either `:>=` or `:<`, and `th_rate` is a float between 0.0 and 1.0
+  representing the threshold rate of total medias.
   Each entry is a tuple of `{tag_name, count}`.
   """
-  def minority_reported_tags(th_rate \\ 0.32) when th_rate > 0.0 and th_rate <= 1.0 do
+  def filter_by_count({op, th_rate} = cond)
+      when op in [:>=, :<] and th_rate > 0.0 and th_rate <= 1.0 do
     state = Hume.state(__MODULE__)
     total_medias = Trie.fetch(String.to_charlist("__all__"), state)[:count] || 0
-    th = (total_medias * th_rate) |> round()
+
+    closure =
+      case cond do
+        {:>=, th_rate} when th_rate > 0.0 and th_rate <= 1.0 ->
+          th = (total_medias * th_rate) |> round()
+          fn count -> count >= th end
+
+        {:<, th_rate} when th_rate > 0.0 and th_rate <= 1.0 ->
+          th = (total_medias * th_rate) |> round()
+          fn count -> count < th end
+      end
 
     Trie.fold(
       fn key, val, acc ->
-        if val[:count] < th do
-          [{to_string(key), val[:count]} | acc]
+        count = val[:count]
+
+        if closure.(count) do
+          [{to_string(key), count} | acc]
         else
           acc
         end
@@ -67,7 +84,6 @@ defmodule Mortar.TagIndex do
       [],
       state
     )
-    |> Enum.sort_by(fn {_tag, count} -> count end)
   end
 
   @impl true
