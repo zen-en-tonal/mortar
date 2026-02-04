@@ -72,18 +72,6 @@ defmodule Mortar.Event do
 
   @impl true
   def events(_stream, from) do
-    case Cachex.get(EventCache, from) do
-      {:ok, nil} ->
-        events = query_repo(from)
-        Cachex.put(EventCache, from, events, expire: :timer.seconds(5))
-        events
-
-      {:ok, events} ->
-        events
-    end
-  end
-
-  defp query_repo(from) do
     Schema
     |> Repo.cursor_based_stream(
       cursor_field: :sequence,
