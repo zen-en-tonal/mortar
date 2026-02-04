@@ -15,6 +15,8 @@ if config_env() == :prod do
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6
 
+  config :mortar, Mortar.Storage.Local, storage_path: System.get_env("STORAGE_PATH") || "/data"
+
   host = System.get_env("HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 

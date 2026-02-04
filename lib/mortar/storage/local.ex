@@ -22,8 +22,6 @@ defmodule Mortar.Storage.Local do
 
   @behaviour Mortar.Storage
 
-  @config Application.compile_env(:mortar, __MODULE__, storage_path: "./data")
-
   @impl true
   def get(key) do
     path = build_file_path(key)
@@ -60,8 +58,11 @@ defmodule Mortar.Storage.Local do
   end
 
   defp build_file_path(key) do
-    storage_path = Keyword.get(@config, :storage_path, "./data")
     <<first::binary-size(2), second::binary-size(2), rest::binary>> = key
-    Path.join([storage_path, first, second, rest])
+    Path.join([storage_path(), first, second, rest])
+  end
+
+  def storage_path do
+    Application.get_env(:mortar, Mortar.Storage.Local)[:storage_path] || "./data"
   end
 end

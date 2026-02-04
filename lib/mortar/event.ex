@@ -1,6 +1,4 @@
 defmodule Mortar.Event do
-  import Ecto.Query
-
   alias Mortar.Error
   alias Mortar.Repo
   alias Mortar.EventCache
@@ -86,26 +84,22 @@ defmodule Mortar.Event do
   end
 
   defp query_repo(from) do
-    query =
-      from e in Schema,
-        where: e.sequence > ^from,
-        order_by: [asc: e.sequence],
-        select: e
-
-    events =
-      Repo.all(query)
-      |> Enum.map(fn e ->
-        {e.sequence, {String.to_atom(e.kind), e.subject, e.payload}}
-      end)
-
-    {:ordered, events}
+    Schema
+    |> Repo.cursor_based_stream(
+      cursor_field: :sequence,
+      after_cursor: from,
+      order: :asc,
+      parallel: true
+    )
+    |> Stream.map(fn e ->
+      {e.sequence, {String.to_atom(e.kind), e.subject, e.payload}}
+    end)
   end
 
   @impl true
   def append_batch(_stream, events) do
     entries =
       events
-      |> Hume.EventOrder.to_list()
       |> Enum.map(fn {seq, {kind, subject, payload}} ->
         %Schema{}
         |> Schema.changeset(%{

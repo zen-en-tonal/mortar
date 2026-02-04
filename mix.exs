@@ -33,13 +33,14 @@ defmodule Mortar.MixProject do
       {:jason, "~> 1.4"},
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
-      {:hume, "~> 0.0.1"},
+      {:hume, "~> 0.0.11"},
       {:trie, "~> 2.0"},
       {:infer, "~> 0.2.6"},
       {:bandit, "~> 1.10"},
       {:ex_image_info, "~> 1.0"},
       {:rambo, "~> 0.3"},
-      {:cachex, "~> 4.0"}
+      {:cachex, "~> 4.0"},
+      {:ecto_cursor_based_stream, "~> 1.2"}
     ]
   end
 
