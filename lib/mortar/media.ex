@@ -366,11 +366,12 @@ defmodule Mortar.Media do
           case order do
             :asc -> ids |> Enum.sort(&<=/2)
             :desc -> ids |> Enum.sort(&>=/2)
+            :random -> ids |> Enum.shuffle()
           end
           |> Enum.slice(offset, limit)
 
         medias =
-          Repo.all(from m in Schema, where: m.id in ^ids, order_by: [{^order, :id}])
+          Repo.all(from m in Schema, where: m.id in ^ids)
           |> Enum.map(fn
             %Schema{} = rec ->
               %__MODULE__{
@@ -387,6 +388,13 @@ defmodule Mortar.Media do
                 updated_at: rec.updated_at
               }
           end)
+
+        medias =
+          case order do
+            :asc -> medias |> Enum.sort_by(& &1.id, &<=/2)
+            :desc -> medias |> Enum.sort_by(& &1.id, &>=/2)
+            :random -> medias
+          end
 
         {:ok, medias}
 

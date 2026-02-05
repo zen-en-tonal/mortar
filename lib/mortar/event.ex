@@ -98,7 +98,9 @@ defmodule Mortar.Event do
         })
       end)
 
-    case Repo.transact(fn -> {:ok, Enum.each(entries, &Repo.insert!/1)} end) do
+    case Repo.transact(fn -> {:ok, Enum.each(entries, &Repo.insert!/1)} end,
+           isolation: :read_uncommitted
+         ) do
       {:ok, :ok} -> :ok
       {:error, reason} -> {:error, Error.internal("Failed to append event batch", reason: reason)}
     end

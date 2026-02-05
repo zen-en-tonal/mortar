@@ -25,4 +25,7 @@ if config_env() == :prod do
     url: [host: host, port: 443, scheme: "https"],
     port: port,
     ip: {0, 0, 0, 0}
+
+  image_proxy_url = System.get_env("IMAGE_PROXY_URL") || "https://#{host}"
+  config :mortar, Mortar.Web.Danbooru, image_proxy_url: image_proxy_url |> URI.parse()
 end

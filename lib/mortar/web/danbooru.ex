@@ -28,9 +28,8 @@ defmodule Mortar.Web.Danbooru do
     page = parse_page(conn.params["page"])
     offset = (page - 1) * limit
     query = tags_to_query(conn.params["tags"])
-    order = parse_order(conn.params["order"])
 
-    case Media.query(query, limit: limit, offset: offset, order: order) do
+    case Media.query(query[:q], limit: limit, offset: offset, order: query[:order]) do
       {:ok, medias} ->
         body =
           medias
@@ -174,17 +173,20 @@ defmodule Mortar.Web.Danbooru do
     end
   end
 
-  defp tags_to_query(""), do: "__all__"
-  defp tags_to_query(nil), do: "__all__"
+  def tags_to_query(nil), do: [q: "__all__", order: :desc]
+  def tags_to_query([]), do: [q: "__all__", order: :desc]
 
-  defp tags_to_query(tags) when is_binary(tags) do
+  def tags_to_query(tags) when is_binary(tags) do
     String.split(tags, " ", trim: true)
-    |> Enum.reduce("__all__", fn
+    |> Enum.reduce([q: "__all__", order: :desc], fn
+      "order:" <> order, acc ->
+        put_in(acc, [:order], parse_order(order))
+
       "-" <> tag, acc ->
-        {:and, acc, {:not, tag}}
+        put_in(acc, [:q], {:and, {:not, tag}, acc[:q]})
 
       tag, acc ->
-        {:and, acc, tag}
+        put_in(acc, [:q], {:and, tag, acc[:q]})
     end)
   end
 
@@ -198,6 +200,7 @@ defmodule Mortar.Web.Danbooru do
 
   defp parse_order("asc"), do: :asc
   defp parse_order("desc"), do: :desc
+  defp parse_order("random"), do: :random
   defp parse_order(_), do: :desc
 
   defp parse_media(%Media{} = media) do
@@ -218,8 +221,8 @@ defmodule Mortar.Web.Danbooru do
       pixiv_id: nil,
       source: media.source,
       md5: media.md5,
-      large_file_url: make_url(media),
-      preview_file_url: make_url(media),
+      large_file_url: with_image_proxy(media, "sample"),
+      preview_file_url: with_image_proxy(media, "360x360"),
       file_ext: media.ext,
       file_size: media.size,
       width: media.metadata["width"] || 0,
@@ -259,6 +262,34 @@ defmodule Mortar.Web.Danbooru do
         pixel_hash: media.md5,
         variants: [
           %{
+            variant_type: "180x180",
+            url: with_image_proxy(media, "180x180"),
+            width: 180,
+            height: 180,
+            file_ext: media.ext
+          },
+          %{
+            variant_type: "360x360",
+            url: with_image_proxy(media, "360x360"),
+            width: 360,
+            height: 360,
+            file_ext: media.ext
+          },
+          %{
+            variant_type: "720x720",
+            url: with_image_proxy(media, "720x720"),
+            width: 720,
+            height: 720,
+            file_ext: media.ext
+          },
+          %{
+            variant_type: "sample",
+            url: with_image_proxy(media, "sample"),
+            width: 850,
+            height: 850,
+            file_ext: media.ext
+          },
+          %{
             variant_type: "original",
             url: make_url(media),
             width: media.metadata["width"] || 0,
@@ -272,5 +303,13 @@ defmodule Mortar.Web.Danbooru do
 
   defp make_url(%Media{} = media) do
     "#{Mortar.Web.host() |> URI.to_string()}/file/#{media.md5}.#{media.ext}"
+  end
+
+  defp with_image_proxy(%Media{} = media, variant) do
+    image_proxy =
+      (Application.get_env(:mortar, __MODULE__)[:image_proxy_url] || Mortar.Web.host())
+      |> URI.to_string()
+
+    "#{image_proxy}/#{variant}/#{media.md5}.#{media.ext}"
   end
 end
