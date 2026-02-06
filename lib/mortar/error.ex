@@ -9,14 +9,20 @@ defmodule Mortar.Error do
 
   @type error_type :: :invalid | :internal
 
-  def invalid(reason) when is_binary(reason) do
+  @doc """
+  Creates an invalid operation error with the given reason.
+  """
+  def invalid(reason, ctx \\ []) when is_binary(reason) do
     %__MODULE__{
       type: :invalid,
       message: "Invalid operation: #{reason}",
-      context: [reason: reason]
+      context: ctx
     }
   end
 
+  @doc """
+  Creates an internal error with the given message and optional context.
+  """
   def internal(message, context \\ []) when is_binary(message) and is_list(context) do
     %__MODULE__{
       type: :internal,

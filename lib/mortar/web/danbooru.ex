@@ -3,6 +3,7 @@ defmodule Mortar.Web.Danbooru do
 
   alias Mortar.Storage
   alias Mortar.Media
+  alias Mortar.Error
 
   plug(Plug.Parsers,
     parsers: [:json, :urlencoded, :multipart],
@@ -40,9 +41,9 @@ defmodule Mortar.Web.Danbooru do
         |> put_resp_content_type("application/json")
         |> send_resp(200, body)
 
-      {:error, reason} ->
+      {:error, %Error{type: :invalid} = err} ->
         conn
-        |> send_resp(500, "Error fetching medias: #{reason}")
+        |> send_resp(400, "Invalid query: #{err.message}")
     end
   end
 
@@ -74,9 +75,9 @@ defmodule Mortar.Web.Danbooru do
           |> put_resp_content_type("application/json")
           |> send_resp(201, body)
 
-        {:error, reason} ->
+        {:error, %Error{type: :invalid} = err} ->
           conn
-          |> send_resp(500, "Error creating media: #{inspect(reason)}")
+          |> send_resp(400, "Invalid request: #{err.message}")
       end
     end
   end
@@ -98,10 +99,6 @@ defmodule Mortar.Web.Danbooru do
       {:error, :not_found} ->
         conn
         |> send_resp(404, "Media not found")
-
-      {:error, reason} ->
-        conn
-        |> send_resp(500, "Error fetching media: #{reason}")
     end
   end
 
@@ -139,18 +136,14 @@ defmodule Mortar.Web.Danbooru do
             |> put_resp_content_type("application/json")
             |> send_resp(200, body)
 
-          {:error, reason} ->
+          {:error, %Error{type: :invalid} = err} ->
             conn
-            |> send_resp(500, "Error updating tags: #{inspect(reason)}")
+            |> send_resp(400, "Invalid request: #{err.message}")
         end
 
       {:error, :not_found} ->
         conn
         |> send_resp(404, "Media not found")
-
-      {:error, reason} ->
-        conn
-        |> send_resp(500, "Error fetching media: #{reason}")
     end
   end
 

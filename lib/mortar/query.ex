@@ -12,6 +12,7 @@ defmodule Mortar.Query do
   """
 
   alias Mortar.Tag
+  alias Mortar.Error
 
   @type tag :: binary()
   @type condition ::
@@ -86,7 +87,7 @@ defmodule Mortar.Query do
     missing_tags = Enum.filter(require_tags, fn t -> not Map.has_key?(tags, t) end)
 
     if missing_tags != [] do
-      {:error, {:missing_tags, missing_tags}}
+      {:error, Error.invalid("Missing required tags", missing_tags: missing_tags)}
     else
       do_eval(query, tags: tags) |> RoaringBitset.to_list()
     end

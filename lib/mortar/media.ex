@@ -5,6 +5,7 @@ defmodule Mortar.Media do
   alias Mortar.Query
   alias Mortar.Tag
   alias Mortar.FFProbe
+  alias Mortar.Error
 
   import Ecto.Query
 
@@ -74,8 +75,8 @@ defmodule Mortar.Media do
   """
   def upload(binary, attrs \\ []) do
     case identify(binary) do
-      {:error, :unsupported_media_type} ->
-        {:error, :unsupported_media_type}
+      {:error, reason} ->
+        {:error, reason}
 
       {:ok, info} ->
         attrs =
@@ -129,7 +130,11 @@ defmodule Mortar.Media do
 
       {:ok, media}
     else
-      {:error, %Ecto.Changeset{} = set} -> {:error, set.errors}
+      {:error, %Ecto.Changeset{} = set} ->
+        {:error, Error.invalid("Failed to upload media", details: set.errors)}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -172,8 +177,8 @@ defmodule Mortar.Media do
            updated_at: record.updated_at
          }}
 
-      {:error, reason} ->
-        {:error, reason}
+      {:error, %Ecto.Changeset{} = set} ->
+        {:error, Error.invalid("Failed to update media", details: set.errors)}
     end
   end
 
@@ -248,11 +253,8 @@ defmodule Mortar.Media do
             {:ok, info}
         end
 
-      :unknown ->
-        {:error, :unsupported_media_type}
-
       _ ->
-        {:error, :unsupported_media_type}
+        {:error, Error.invalid("Unsupported media type")}
     end
   end
 

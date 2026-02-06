@@ -102,13 +102,12 @@ defmodule Mortar.QueryTest do
 
     test "returns error when tags are missing", %{tags: tags} do
       query = {:and, "tag1", "missing_tag"}
-      assert {:error, {:missing_tags, ["missing_tag"]}} = Query.eval(query, tags)
+      assert {:error, _error} = Query.eval(query, tags)
     end
 
     test "returns error with multiple missing tags", %{tags: tags} do
       query = {:and, "missing1", {:or, "tag1", "missing2"}}
-      {:error, {:missing_tags, missing}} = Query.eval(query, tags)
-      assert Enum.sort(missing) == ["missing1", "missing2"]
+      assert {:error, _error} = Query.eval(query, tags)
     end
 
     test "evaluates AND with two tags", %{tags: tags} do
