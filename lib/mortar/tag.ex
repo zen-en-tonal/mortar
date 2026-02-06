@@ -64,7 +64,7 @@ defmodule Mortar.Tag do
         end
       end)
 
-    case Task.yield(task, 3_000) || Task.ignore(task) do
+    case Task.yield(task, 1_000) || Task.ignore(task) do
       nil ->
         case last_snapshot({__MODULE__, tag_name}) do
           {_offset, %__MODULE__{} = state} ->
