@@ -64,7 +64,7 @@ defmodule Mortar.Hibernate do
   end
 
   def handle_info({:DOWN, ref, :process, pid, _reason}, state) do
-    Logger.info("Process #{inspect(pid)} has gone down. Cleaning up.")
+    Logger.debug("Process #{inspect(pid)} has gone down. Cleaning up.")
 
     {pid, new_refs} = Map.pop(state.refs, ref)
     new_ttls = Map.delete(state.ttls, pid)

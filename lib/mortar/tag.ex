@@ -68,7 +68,10 @@ defmodule Mortar.Tag do
   """
   def warm(tag_name) do
     if exists?(tag_name) do
-      TagSupervisor.take_snapshot(tag_name)
+      pid = TagSupervisor.ensure_tag_started(tag_name)
+      Hume.Projection.catch_up(pid)
+      Hume.Projection.take_snapshot(pid)
+      GenServer.stop(pid, :normal)
     end
 
     :ok
