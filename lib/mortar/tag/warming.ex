@@ -54,7 +54,7 @@ defmodule Mortar.TagWarming do
     {:noreply, state}
   end
 
-  def handle_info({:DOWN}, state) do
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
     {:noreply, state}
   end
 
