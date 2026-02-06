@@ -33,7 +33,19 @@ defmodule Mortar.TagIndex do
   Returns a list of suggested tags based on the given prefix.
   Each suggestion is a tuple of `{tag_name, count}`.
   """
-  def suggest(prefix, top_n \\ 10) do
+  def suggest(prefix)
+
+  def suggest("") do
+    state = Hume.state(__MODULE__)
+
+    Trie.fold(
+      fn key, val, acc -> [{to_string(key), val[:count]} | acc] end,
+      [],
+      state
+    )
+  end
+
+  def suggest(prefix) do
     state = Hume.state(__MODULE__)
     prefix = String.to_charlist(prefix)
 
@@ -43,8 +55,6 @@ defmodule Mortar.TagIndex do
       [],
       state
     )
-    |> Enum.sort_by(fn {_tag, count} -> -count end)
-    |> Enum.take(top_n)
   end
 
   @doc """

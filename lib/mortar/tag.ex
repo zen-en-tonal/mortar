@@ -45,7 +45,7 @@ defmodule Mortar.Tag do
   Returns a list of suggested tags based on the given prefix.
   Each suggestion is a tuple of `{tag_name, count}`.
   """
-  def suggest(prefix, top_n \\ 10), do: TagIndex.suggest(prefix, top_n)
+  def suggest(prefix), do: TagIndex.suggest(prefix)
 
   @doc """
   Returns the Tag state for the given tag name.

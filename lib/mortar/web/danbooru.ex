@@ -1,6 +1,7 @@
 defmodule Mortar.Web.Danbooru do
   use Plug.Router
 
+  alias Mortar.Tag
   alias Mortar.Storage
   alias Mortar.Media
   alias Mortar.Error
@@ -164,6 +165,38 @@ defmodule Mortar.Web.Danbooru do
         conn
         |> send_resp(500, "Error fetching file: #{reason}")
     end
+  end
+
+  get "/tags.json" do
+    limit = parse_limit(conn.params["limit"])
+
+    matches =
+      (conn.params["search%5Bname_matches%5D"] || "")
+      |> String.trim("*")
+
+    body =
+      Tag.suggest(matches)
+      |> Enum.sort_by(fn {_name, count} -> -count end)
+      |> Enum.reject(fn {name, _count} ->
+        # Exclude meta-tags starting or ending with underscore
+        String.starts_with?(name, "_") or String.ends_with?(name, "_")
+      end)
+      |> Enum.take(limit)
+      |> Enum.map(fn {name, count} ->
+        %{
+          id: 0,
+          name: name,
+          post_count: count,
+          category: 1,
+          is_deprecated: false,
+          words: []
+        }
+      end)
+      |> Jason.encode!()
+
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, body)
   end
 
   def tags_to_query(nil), do: [q: "__all__", order: :desc]
