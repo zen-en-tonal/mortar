@@ -1,7 +1,6 @@
 defmodule Mortar.Event do
   alias Mortar.Error
   alias Mortar.Repo
-  alias Mortar.EventCache
 
   @behaviour Hume.EventStore
 
