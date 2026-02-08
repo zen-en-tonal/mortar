@@ -7,7 +7,12 @@ defmodule Mortar.Web.Danbooru do
   alias Mortar.Error
 
   plug(Plug.Parsers,
-    parsers: [:json, :urlencoded, :multipart],
+    parsers: [
+      :json,
+      :urlencoded,
+      # 1 GB max upload size
+      {:multipart, length: 1_000_000_000}
+    ],
     pass: ["*/*"],
     json_decoder: Jason
   )
@@ -65,7 +70,7 @@ defmodule Mortar.Web.Danbooru do
       conn
       |> send_resp(400, "File parameter is required")
     else
-      case Media.upload(File.read!(file.path), attrs) do
+      case Media.upload(File.stream!(file.path, 1024), attrs) do
         {:ok, media} ->
           body =
             media
@@ -152,18 +157,25 @@ defmodule Mortar.Web.Danbooru do
     [md5, ext] = conn.params["filename"] |> String.split(".")
 
     case Storage.get(md5) do
-      {:ok, bin} ->
-        conn
-        |> put_resp_content_type(MIME.type(ext))
-        |> send_resp(200, bin)
+      {:ok, stream} ->
+        conn =
+          conn
+          |> put_resp_content_type(MIME.type(ext))
+          |> send_chunked(200)
+
+        Enum.reduce_while(stream, conn, fn chunk, conn ->
+          case Plug.Conn.chunk(conn, chunk) do
+            {:ok, conn} ->
+              {:cont, conn}
+
+            {:error, :closed} ->
+              {:halt, conn}
+          end
+        end)
 
       {:error, :not_found} ->
         conn
         |> send_resp(404, "File not found")
-
-      {:error, reason} ->
-        conn
-        |> send_resp(500, "Error fetching file: #{reason}")
     end
   end
 

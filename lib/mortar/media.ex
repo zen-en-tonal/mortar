@@ -73,8 +73,8 @@ defmodule Mortar.Media do
   @doc """
   Uploads a binary as media with the given attributes.
   """
-  def upload(binary, attrs \\ []) do
-    case identify(binary) do
+  def upload(stream, attrs \\ []) do
+    case identify(stream) do
       {:error, reason} ->
         {:error, reason}
 
@@ -83,22 +83,29 @@ defmodule Mortar.Media do
           attrs
           |> put_in([:type], info[:type])
           |> put_in([:ext], info[:ext])
+          |> put_in([:size], info[:size])
           |> put_in([:metadata], info[:metadata])
 
-        do_upload(binary, attrs)
+        do_upload(stream, attrs)
     end
   end
 
-  defp do_upload(binary, attrs) do
-    set = %{
-      md5: :crypto.hash(:md5, binary) |> Base.encode16(case: :lower),
-      file_type: to_string(attrs[:type]),
-      file_size: byte_size(binary),
-      source: attrs[:source],
-      file_name: attrs[:name],
-      metadata: attrs[:metadata] || %{},
-      ext: attrs[:ext]
-    }
+  defp do_upload(stream, attrs) do
+    head =
+      Stream.take(stream, 16_384)
+      |> Enum.to_list()
+      |> IO.iodata_to_binary()
+
+    set =
+      %{
+        md5: :crypto.hash(:md5, head) |> Base.encode16(case: :lower),
+        file_type: to_string(attrs[:type]),
+        file_size: attrs[:size],
+        source: attrs[:source],
+        file_name: attrs[:name],
+        metadata: attrs[:metadata] || %{},
+        ext: attrs[:ext]
+      }
 
     tags =
       ((attrs[:tags] || []) ++ compose_metatags(set))
@@ -108,7 +115,7 @@ defmodule Mortar.Media do
 
     set = put_in(set, [:tag_strings], Enum.join(tags, " "))
 
-    with :ok <- Storage.put(set.md5, binary),
+    with :ok <- Storage.put(set.md5, stream),
          {:ok, record} <- Schema.changeset(%Schema{}, set) |> Repo.insert() do
       media =
         %__MODULE__{
@@ -214,9 +221,14 @@ defmodule Mortar.Media do
   @doc """
   Infers the media type from the given binary.
   """
-  @spec infer_type(binary()) :: {:image | :audio | :video, binary()} | :unknown
-  def infer_type(binary) do
-    case Infer.get(binary) do
+  @spec infer_type(File.Stream.t()) :: {:image | :audio | :video, binary()} | :unknown
+  def infer_type(stream) do
+    header =
+      Stream.take(stream, 512)
+      |> Enum.to_list()
+      |> IO.iodata_to_binary()
+
+    case Infer.get(header) do
       %Infer.Type{} = type ->
         {type.matcher_type, type.extension}
 
@@ -225,18 +237,19 @@ defmodule Mortar.Media do
     end
   end
 
-  @spec identify(binary()) :: {:ok, info :: keyword()} | {:error, term()}
-  def identify(bin) do
-    case infer_type(bin) do
+  @spec identify(File.Stream.t()) :: {:ok, info :: keyword()} | {:error, term()}
+  def identify(stream) do
+    case infer_type(stream) do
       {type, ext} when type in [:image, :audio, :video] ->
-        case FFProbe.extract(bin) do
+        case FFProbe.extract(stream) do
           {:ok, data} ->
-            data = put_in(data, ["size"], byte_size(bin))
+            size = data["format"]["size"] |> parse_number() |> round()
+            data = put_in(data, ["size"], size)
 
             info = [
               type: type,
               ext: ext,
-              size: byte_size(bin),
+              size: size,
               metadata: extract_metadata(type, data)
             ]
 
@@ -246,7 +259,7 @@ defmodule Mortar.Media do
             info = [
               type: type,
               ext: ext,
-              size: byte_size(bin),
+              size: 0,
               metadata: %{}
             ]
 

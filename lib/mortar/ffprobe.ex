@@ -6,12 +6,12 @@ defmodule Mortar.FFProbe do
     "-show_format",
     "-show_streams",
     "-print_format",
-    "json",
-    "pipe:"
+    "json"
   ]
 
-  def extract(binary) do
-    case Rambo.run(ffprobe(), @args, in: binary) do
+  @spec extract(File.Stream.t()) :: {:ok, map()} | {:error, String.t()}
+  def extract(stream) do
+    case Rambo.run(ffprobe(), args(stream.path)) do
       {:ok, %{status: 0, out: out}} ->
         {:ok, Jason.decode!(out)}
 
@@ -22,6 +22,8 @@ defmodule Mortar.FFProbe do
         {:error, "ffprobe failed: #{inspect(reason)}"}
     end
   end
+
+  defp args(file_path), do: @args ++ [file_path]
 
   defp ffprobe, do: System.find_executable(@ffprobe)
 end

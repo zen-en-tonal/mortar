@@ -7,12 +7,12 @@ defmodule Mortar.Storage do
   @doc """
   Retrieves the value associated with the given key.
   """
-  @callback get(key :: binary()) :: {:ok, binary()} | {:error, :not_found | term()}
+  @callback get(key :: binary()) :: {:ok, Enumerable.t()} | {:error, :not_found | term()}
 
   @doc """
   Stores the given key-value pair.
   """
-  @callback put(key :: binary(), value :: binary()) :: :ok | {:error, term()}
+  @callback put(key :: binary(), value :: Enumerable.t()) :: :ok | {:error, term()}
 
   @doc """
   Deletes the value associated with the given key.
@@ -22,13 +22,13 @@ defmodule Mortar.Storage do
   @doc """
   Retrieves the value associated with the given key.
   """
-  @spec get(binary()) :: {:ok, binary()} | {:error, :not_found | term()}
+  @spec get(binary()) :: {:ok, Enumerable.t()} | {:error, :not_found | term()}
   def get(key), do: @adapter.get(key)
 
   @doc """
   Stores the given key-value pair.
   """
-  @spec put(binary(), binary()) :: :ok | {:error, term()}
+  @spec put(binary(), Enumerable.t()) :: :ok | {:error, term()}
   def put(key, value), do: @adapter.put(key, value)
 
   @doc """

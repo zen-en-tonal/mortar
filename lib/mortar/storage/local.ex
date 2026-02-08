@@ -26,24 +26,24 @@ defmodule Mortar.Storage.Local do
   def get(key) do
     path = build_file_path(key)
 
-    case File.read(path) do
-      {:ok, content} -> {:ok, content}
-      {:error, :enoent} -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
+    case File.exists?(path) do
+      true -> {:ok, File.stream!(path, 1024)}
+      false -> {:error, :not_found}
     end
   end
 
   @impl true
-  def put(key, value) do
+  def put(key, stream) do
     path = build_file_path(key)
     dir = Path.dirname(path)
 
-    with :ok <- File.mkdir_p(dir),
-         :ok <- File.write(path, value) do
-      :ok
-    else
-      {:error, reason} -> {:error, reason}
-    end
+    :ok = File.mkdir_p(dir)
+
+    :ok =
+      Stream.into(stream, File.stream!(path))
+      |> Stream.run()
+
+    :ok
   end
 
   @impl true
