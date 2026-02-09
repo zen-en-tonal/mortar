@@ -190,7 +190,6 @@ defmodule Mortar.Web.Danbooru do
 
     body =
       Tag.suggest(matches)
-      |> IO.inspect(label: "Tag Suggestions")
       |> Enum.sort_by(fn {_name, count} -> -count end)
       |> Enum.reject(fn {name, _count} ->
         # Exclude meta-tags starting or ending with underscore
