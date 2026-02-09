@@ -186,6 +186,24 @@ defmodule Mortar.Web.Danbooru do
       (conn.params["search"]["name_matches"] || "")
       |> String.trim("*")
 
+    word_split_pattern =
+      :binary.compile_pattern([
+        "_",
+        "(",
+        ")",
+        "[",
+        "]",
+        "{",
+        "}",
+        "?",
+        "+",
+        "^",
+        "$",
+        "\\",
+        "|",
+        "."
+      ])
+
     body =
       Tag.suggest(matches)
       |> Enum.sort_by(fn {_name, count} -> -count end)
@@ -199,9 +217,9 @@ defmodule Mortar.Web.Danbooru do
           id: 0,
           name: name,
           post_count: count,
-          category: 1,
+          category: 0,
           is_deprecated: false,
-          words: []
+          words: String.split(name, word_split_pattern, trim: true)
         }
       end)
       |> Jason.encode!()
