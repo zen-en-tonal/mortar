@@ -182,12 +182,15 @@ defmodule Mortar.Web.Danbooru do
   get "/tags.json" do
     limit = parse_limit(conn.params["limit"])
 
+    IO.inspect(conn.params, label: "Tag Suggest Params")
+
     matches =
-      (conn.params["search%5Bname_matches%5D"] || "")
+      (conn.params["search"]["name_matches"] || "")
       |> String.trim("*")
 
     body =
       Tag.suggest(matches)
+      |> IO.inspect(label: "Tag Suggestions")
       |> Enum.sort_by(fn {_name, count} -> -count end)
       |> Enum.reject(fn {name, _count} ->
         # Exclude meta-tags starting or ending with underscore

@@ -49,12 +49,12 @@ defmodule Mortar.TagIndex do
     state = Hume.state(__MODULE__)
     prefix = String.to_charlist(prefix)
 
-    Trie.foldr_similar(
-      prefix,
-      fn key, val, acc -> [{to_string(key), val[:count]} | acc] end,
-      [],
-      state
-    )
+    if Trie.is_prefix(prefix, state) do
+      Trie.to_list_similar(prefix, state)
+      |> Enum.map(fn {key, val} -> {to_string(key), val[:count]} end)
+    else
+      []
+    end
   end
 
   @doc """
