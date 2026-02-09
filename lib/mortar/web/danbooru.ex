@@ -182,8 +182,6 @@ defmodule Mortar.Web.Danbooru do
   get "/tags.json" do
     limit = parse_limit(conn.params["limit"])
 
-    IO.inspect(conn.params, label: "Tag Suggest Params")
-
     matches =
       (conn.params["search"]["name_matches"] || "")
       |> String.trim("*")
