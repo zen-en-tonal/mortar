@@ -25,8 +25,8 @@ defmodule Mortar.Event do
 
     def changeset(struct, attrs) do
       struct
-      |> cast(attrs, [:kind, :subject, :payload, :sequence])
-      |> validate_required([:kind, :subject, :payload, :sequence])
+      |> cast(attrs, [:kind, :subject, :payload])
+      |> validate_required([:kind, :subject, :payload])
     end
   end
 
@@ -60,16 +60,6 @@ defmodule Mortar.Event do
   end
 
   @impl true
-  def next_sequence() do
-    [[v]] =
-      Repo
-      |> Ecto.Adapters.SQL.query!("SELECT nextval('event_seq')", [])
-      |> Map.get(:rows)
-
-    v
-  end
-
-  @impl true
   def events(_stream, from) do
     Schema
     |> Repo.cursor_based_stream(
@@ -87,20 +77,27 @@ defmodule Mortar.Event do
   def append_batch(_stream, events) do
     entries =
       events
-      |> Enum.map(fn {seq, {kind, subject, payload}} ->
+      |> Enum.map(fn {kind, subject, payload} ->
         %Schema{}
         |> Schema.changeset(%{
-          sequence: seq,
           kind: to_string(kind),
           subject: to_string(subject),
           payload: payload
         })
       end)
 
-    case Repo.transact(fn ->
-           {:ok, Enum.each(entries, &Repo.insert!/1)}
-         end) do
-      {:ok, :ok} -> :ok
+    result =
+      Repo.transact(fn ->
+        Enum.reduce_while(entries, :ok, fn entry, _acc ->
+          case Repo.insert(entry) do
+            {:ok, record} -> {:cont, {:ok, record}}
+            {:error, reason} -> {:halt, {:error, reason}}
+          end
+        end)
+      end)
+
+    case result do
+      {:ok, %Schema{} = record} -> {:ok, record.sequence}
       {:error, reason} -> {:error, Error.internal("Failed to append event batch", reason: reason)}
     end
   end
