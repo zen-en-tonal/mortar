@@ -66,7 +66,7 @@ defmodule Mortar.Event do
       cursor_field: :sequence,
       after_cursor: from,
       order: :asc,
-      parallel: true
+      parallel: false
     )
     |> Stream.map(fn e ->
       {e.sequence, {String.to_atom(e.kind), e.subject, e.payload}}

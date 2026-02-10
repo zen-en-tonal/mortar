@@ -1,8 +1,8 @@
 defmodule Mortar.TagWarming do
   use GenServer
 
-  alias Mortar.Tag
   alias Mortar.TagIndex
+  alias Mortar.TagSupervisor
   alias Mortar.TaskSupervisor
 
   @interval :timer.seconds(10)
@@ -34,7 +34,7 @@ defmodule Mortar.TagWarming do
     Task.Supervisor.async_stream_nolink(
       TaskSupervisor,
       state,
-      fn tag -> {Tag.warm(tag), tag} end,
+      fn tag -> {TagSupervisor.warm_tag(tag), tag} end,
       timeout: :infinity
     )
     |> Stream.run()

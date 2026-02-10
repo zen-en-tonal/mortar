@@ -63,21 +63,6 @@ defmodule Mortar.Tag do
   end
 
   @doc """
-  Warms the tag by taking a snapshot of its current state.
-  If the tag does not exist, does nothing.
-  """
-  def warm(tag_name) do
-    if exists?(tag_name) do
-      pid = TagSupervisor.ensure_tag_started(tag_name)
-      Hume.Projection.catch_up(pid)
-      Hume.Projection.take_snapshot(pid)
-      GenServer.stop(pid, :normal)
-    end
-
-    :ok
-  end
-
-  @doc """
   Queues the tag for warming.
   """
   def queue_warm(tag_name) when is_binary(tag_name) do

@@ -8,6 +8,7 @@ defmodule Mortar.TagSupervisor do
   alias Mortar.TagWarming
   alias Mortar.Event
   alias Mortar.Error
+  alias Mortar.TagLRU
 
   def start_link(_args) do
     Supervisor.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -61,13 +62,18 @@ defmodule Mortar.TagSupervisor do
   def ensure_tag_started(tag_name) do
     {:via, Registry, {reg, key}} = via_tuple(tag_name)
 
-    case Registry.lookup(reg, key) do
-      [{pid, _value}] ->
-        pid
+    pid =
+      case Registry.lookup(reg, key) do
+        [{pid, _value}] ->
+          pid
 
-      [] ->
-        start_tag(tag_name)
-    end
+        [] ->
+          start_tag(tag_name)
+      end
+
+    Mortar.LRU.touch(TagLRU, pid)
+
+    pid
   end
 
   @doc """
@@ -77,7 +83,6 @@ defmodule Mortar.TagSupervisor do
   def get_state(tag_name, opts \\ []) do
     if TagIndex.exists?(tag_name) do
       pid = ensure_tag_started(tag_name)
-      Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(5))
       Hume.state(pid, opts)
     else
       nil
@@ -90,7 +95,16 @@ defmodule Mortar.TagSupervisor do
   def take_snapshot(tag_name) do
     pid = ensure_tag_started(tag_name)
     Hume.Projection.take_snapshot(pid)
-    Mortar.Hibernate.set_ttl(TagHibernate, pid, :timer.seconds(5))
+  end
+
+  def warm_tag(tag_name) do
+    if TagIndex.exists?(tag_name) do
+      pid = ensure_tag_started(tag_name)
+      Hume.Projection.catch_up(pid)
+      Hume.Projection.take_snapshot(pid)
+    end
+
+    :ok
   end
 
   @impl true
@@ -99,7 +113,7 @@ defmodule Mortar.TagSupervisor do
       {Registry, keys: :unique, name: TagRegistry},
       {PartitionSupervisor,
        child_spec: DynamicSupervisor, name: TagDynamicSupervisor, partitions: 4},
-      {Mortar.Hibernate, name: TagHibernate},
+      {Mortar.LRU, name: TagLRU, size: 128},
       {TagIndex, name: TagIndex, stream: Event.stream(), projection: TagIndex},
       {TagWarming, []}
     ]
