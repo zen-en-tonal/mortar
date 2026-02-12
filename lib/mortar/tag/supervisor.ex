@@ -100,8 +100,7 @@ defmodule Mortar.TagSupervisor do
   def warm_tag(tag_name) do
     if TagIndex.exists?(tag_name) do
       pid = ensure_tag_started(tag_name)
-      Hume.Projection.catch_up(pid)
-      Hume.Projection.take_snapshot(pid)
+      Hume.Projection.catch_up_sync(pid, :infinity)
     end
 
     :ok

@@ -33,7 +33,7 @@ defmodule Mortar.MixProject do
       {:jason, "~> 1.4"},
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
-      {:hume, "~> 0.0.13"},
+      {:hume, "~> 0.0.14"},
       {:trie, "~> 2.0"},
       {:infer, "~> 0.2.6"},
       {:bandit, "~> 1.10"},

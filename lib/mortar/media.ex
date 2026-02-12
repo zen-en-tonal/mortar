@@ -213,7 +213,7 @@ defmodule Mortar.Media do
 
     Event.publish(to_add ++ to_remove)
 
-    # Tag.queue_warm(tags)
+    Tag.queue_warm(tags)
 
     %{media | tags: tags}
   end

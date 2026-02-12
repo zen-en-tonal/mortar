@@ -35,7 +35,8 @@ defmodule Mortar.TagWarming do
       TaskSupervisor,
       state,
       fn tag -> {TagSupervisor.warm_tag(tag), tag} end,
-      timeout: :infinity
+      timeout: :infinity,
+      max_concurrency: 4
     )
     |> Stream.run()
 
