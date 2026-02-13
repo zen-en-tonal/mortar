@@ -20,7 +20,7 @@ defmodule Mortar.FFProbe do
   def extract(stream) do
     :poolboy.transaction(
       __MODULE__,
-      fn pid -> GenServer.call(pid, {:extract, stream}) end
+      fn pid -> GenServer.call(pid, {:extract, stream}, 30_000) end
     )
   end
 
