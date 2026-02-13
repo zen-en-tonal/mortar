@@ -13,6 +13,7 @@ defmodule Mortar.Application do
       {Mortar.Repo, []},
       {Task.Supervisor, name: Mortar.TaskSupervisor},
       {Mortar.TagSupervisor, []},
+      :poolboy.child_spec(Mortar.FFProbe, Mortar.FFProbe.poolboy_config()),
       {Bandit, Mortar.Web.endpoint()}
     ]
 
