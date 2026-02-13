@@ -39,7 +39,8 @@ defmodule Mortar.MixProject do
       {:bandit, "~> 1.10"},
       {:ex_image_info, "~> 1.0"},
       {:rambo, "~> 0.3"},
-      {:ecto_cursor_based_stream, "~> 1.2"}
+      {:ecto_cursor_based_stream, "~> 1.2"},
+      {:poolboy, "~> 1.5"}
     ]
   end
 
