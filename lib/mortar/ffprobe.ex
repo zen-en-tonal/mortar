@@ -12,6 +12,7 @@ defmodule Mortar.FFProbe do
   ]
 
   def start_link(opts \\ []) do
+    ffprobe() || raise "ffprobe executable not found in PATH"
     GenServer.start_link(__MODULE__, %{}, opts)
   end
 
