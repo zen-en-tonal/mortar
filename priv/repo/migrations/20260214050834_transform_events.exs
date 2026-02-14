@@ -3,41 +3,39 @@ defmodule Mortar.Repo.Migrations.TransformEvents do
 
   def up do
     Mortar.Repo.transaction(fn ->
-      changes =
-        Mortar.Repo.all(Mortar.Event.Schema)
-        |> Enum.map(fn
-          %Mortar.Event.Schema{kind: kind} = ev when kind in ["add_tag", "remove_tag"] ->
-            payload = %{"media_id" => ev.subject}
-            {ev, [payload: payload, subject: ev.payload["tag"]]}
+      Mortar.Event.Schema
+      |> Mortar.Repo.stream()
+      |> Stream.map(fn
+        %Mortar.Event.Schema{kind: kind} = ev when kind in ["add_tag", "remove_tag"] ->
+          payload = %{"media_id" => ev.subject}
+          {ev, [payload: payload, subject: ev.payload["tag"]]}
 
-          otherwise ->
-            {otherwise, []}
-        end)
-
-      for {ev, change} <- changes do
+        otherwise ->
+          {otherwise, []}
+      end)
+      |> Enum.each(fn {ev, change} ->
         Ecto.Changeset.change(ev, change)
         |> Mortar.Repo.update!()
-      end
+      end)
     end)
   end
 
   def down do
     Mortar.Repo.transaction(fn ->
-      changes =
-        Mortar.Repo.all(Mortar.Event.Schema)
-        |> Enum.map(fn
-          %Mortar.Event.Schema{kind: kind} = ev when kind in ["add_tag", "remove_tag"] ->
-            payload = %{"tag" => ev.subject}
-            {ev, [payload: payload, subject: ev.payload["media_id"]]}
+      Mortar.Event.Schema
+      |> Mortar.Repo.stream()
+      |> Stream.map(fn
+        %Mortar.Event.Schema{kind: kind} = ev when kind in ["add_tag", "remove_tag"] ->
+          payload = %{"tag" => ev.subject}
+          {ev, [payload: payload, subject: ev.payload["media_id"]]}
 
-          otherwise ->
-            {otherwise, []}
-        end)
-
-      for {ev, changes} <- changes do
+        otherwise ->
+          {otherwise, []}
+      end)
+      |> Enum.each(fn {ev, changes} ->
         Ecto.Changeset.change(ev, changes)
         |> Mortar.Repo.update!()
-      end
+      end)
     end)
   end
 end
