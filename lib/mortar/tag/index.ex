@@ -9,6 +9,10 @@ defmodule Mortar.TagIndex do
   @doc """
   Checks if a tag exists in the index.
   """
+  def exists?(non_tag) when non_tag in ["", nil] do
+    false
+  end
+
   def exists?(tag_name) do
     state = Hume.state(__MODULE__)
     Trie.is_key(String.to_charlist(tag_name), state)

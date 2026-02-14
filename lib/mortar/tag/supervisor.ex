@@ -86,36 +86,35 @@ defmodule Mortar.TagSupervisor do
   Returns the state of the tag projector for the given tag name,
   or `nil` if the tag does not exist.
   """
-  def get_state(tag, opts \\ [])
-
-  def get_state(non_tag, _) when non_tag in ["", nil] do
-    nil
-  end
-
+  @spec get_state(tag_name :: binary(), opts :: keyword()) :: Tag.t() | nil
   def get_state(tag_name, opts) do
     if TagIndex.exists?(tag_name) do
       pid = ensure_tag_started(tag_name)
       Hume.state(pid, opts)
-    else
-      nil
     end
   end
 
   @doc """
   Takes a snapshot of the tag projector for the given tag name.
   """
+  @spec take_snapshot(tag_name :: binary()) :: :ok | nil
   def take_snapshot(tag_name) do
-    pid = ensure_tag_started(tag_name)
-    Hume.Projection.take_snapshot(pid)
+    if TagIndex.exists?(tag_name) do
+      pid = ensure_tag_started(tag_name)
+      Hume.Projection.take_snapshot(pid)
+    end
   end
 
+  @doc """
+  Warms the tag projector for the given tag name by ensuring it is started
+  and catching up to the latest events.
+  """
+  @spec warm_tag(tag_name :: binary()) :: :ok | nil
   def warm_tag(tag_name) do
     if TagIndex.exists?(tag_name) do
       pid = ensure_tag_started(tag_name)
       Hume.Projection.catch_up_sync(pid, :infinity)
     end
-
-    :ok
   end
 
   @impl true
