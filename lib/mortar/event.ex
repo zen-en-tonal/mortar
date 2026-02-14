@@ -1,6 +1,5 @@
 defmodule Mortar.Event do
   require Ecto.Query
-  alias Ecto.Adapter.Schema
   alias Mortar.Error
   alias Mortar.Repo
 
