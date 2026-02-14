@@ -205,13 +205,15 @@ defmodule Mortar.Media do
 
     to_add =
       (tags -- media.tags)
-      |> Enum.map(&Event.compose(:add_tag, media.id, %{"tag" => &1}))
+      |> Enum.map(&Event.compose(:add_tag, &1, %{"media_id" => media.id}))
 
     to_remove =
       (media.tags -- tags)
-      |> Enum.map(&Event.compose(:remove_tag, media.id, %{"tag" => &1}))
+      |> Enum.map(&Event.compose(:remove_tag, &1, %{"media_id" => media.id}))
 
-    Event.publish(to_add ++ to_remove)
+    for {_, tag_name, _} = event <- to_add ++ to_remove do
+      Event.publish(event, tag_name)
+    end
 
     Tag.queue_warm(tags)
 

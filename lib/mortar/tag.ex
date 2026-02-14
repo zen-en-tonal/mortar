@@ -85,16 +85,32 @@ defmodule Mortar.Tag do
   end
 
   @impl true
-  def handle_event({:add_tag, subject, %{"tag" => tag_name}}, %__MODULE__{} = state)
+  def handle_event({:add_tag, tag_name, %{"media_id" => subject}}, %__MODULE__{} = state)
       when state.name == tag_name do
-    {media_id, ""} = Integer.parse(subject)
+    media_id =
+      case subject do
+        id when is_integer(id) ->
+          id
+
+        id when is_binary(id) ->
+          String.to_integer(id)
+      end
+
     RoaringBitset.insert(state.bitmap_ref, media_id)
     {:ok, state}
   end
 
-  def handle_event({:remove_tag, subject, %{"tag" => tag_name}}, %__MODULE__{} = state)
+  def handle_event({:remove_tag, tag_name, %{"media_id" => subject}}, %__MODULE__{} = state)
       when state.name == tag_name do
-    {media_id, ""} = Integer.parse(subject)
+    media_id =
+      case subject do
+        id when is_integer(id) ->
+          id
+
+        id when is_binary(id) ->
+          String.to_integer(id)
+      end
+
     RoaringBitset.remove(state.bitmap_ref, media_id)
     {:ok, state}
   end

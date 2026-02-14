@@ -1,4 +1,6 @@
 defmodule Mortar.Event do
+  require Ecto.Query
+  alias Ecto.Adapter.Schema
   alias Mortar.Error
   alias Mortar.Repo
 
@@ -33,11 +35,12 @@ defmodule Mortar.Event do
   @doc """
   Publishes an event to the event stream.
   """
-  @spec publish(event) :: {:ok, event} | {:error, term()} when event: t() | [t()]
-  def publish(event)
+  @spec publish(event, stream :: term()) :: {:ok, event} | {:error, term()}
+        when event: t() | [t()]
+  def publish(event, stream \\ stream())
 
-  def publish(event) do
-    Hume.publish(__MODULE__, stream(), event)
+  def publish(event, stream) do
+    Hume.publish(__MODULE__, stream, event)
     |> case do
       {:ok, _} ->
         {:ok, event}
@@ -60,9 +63,14 @@ defmodule Mortar.Event do
   end
 
   @impl true
-  def events(_stream, from) do
-    Schema
-    |> Repo.cursor_based_stream(
+  def events(stream, from) do
+    query =
+      case stream do
+        @stream -> Schema
+        _ -> Ecto.Query.from(Schema, where: [subject: ^stream])
+      end
+
+    Repo.cursor_based_stream(query,
       cursor_field: :sequence,
       after_cursor: from,
       order: :asc,

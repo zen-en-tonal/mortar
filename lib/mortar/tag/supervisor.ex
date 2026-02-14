@@ -25,6 +25,12 @@ defmodule Mortar.TagSupervisor do
     projection = {Tag, tag_name}
     supervisor = {:via, PartitionSupervisor, {TagDynamicSupervisor, projection}}
 
+    stream =
+      case tag_name do
+        "__all__" -> Event.stream()
+        _ -> tag_name
+      end
+
     spec = %{
       id: projection,
       start:
@@ -32,7 +38,7 @@ defmodule Mortar.TagSupervisor do
          [
            Tag,
            [
-             stream: Event.stream(),
+             stream: stream,
              projection: projection,
              name: via_tuple(tag_name)
            ]
@@ -80,7 +86,13 @@ defmodule Mortar.TagSupervisor do
   Returns the state of the tag projector for the given tag name,
   or `nil` if the tag does not exist.
   """
-  def get_state(tag_name, opts \\ []) do
+  def get_state(tag, opts \\ [])
+
+  def get_state(non_tag, _) when non_tag in ["", nil] do
+    nil
+  end
+
+  def get_state(tag_name, opts) do
     if TagIndex.exists?(tag_name) do
       pid = ensure_tag_started(tag_name)
       Hume.state(pid, opts)
