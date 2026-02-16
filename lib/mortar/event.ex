@@ -34,8 +34,6 @@ defmodule Mortar.Event do
   @doc """
   Publishes an event to the event stream.
   """
-  @spec publish(event, stream :: term()) :: {:ok, event} | {:error, term()}
-        when event: t() | [t()]
   def publish(event, stream \\ stream())
 
   def publish(event, stream) do

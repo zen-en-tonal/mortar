@@ -203,17 +203,11 @@ defmodule Mortar.Media do
       |> Enum.uniq()
       |> Enum.filter(&(&1 != ""))
 
-    to_add =
-      (tags -- media.tags)
-      |> Enum.map(&Event.compose(:add_tag, &1, %{"media_id" => media.id}))
+    to_add = tags -- media.tags
+    for tag <- to_add, do: Tag.add(tag, media.id)
 
-    to_remove =
-      (media.tags -- tags)
-      |> Enum.map(&Event.compose(:remove_tag, &1, %{"media_id" => media.id}))
-
-    for {_, tag_name, _} = event <- to_add ++ to_remove do
-      Event.publish(event, tag_name)
-    end
+    to_remove = media.tags -- tags
+    for tag <- to_remove, do: Tag.remove(tag, media.id)
 
     Tag.queue_warm(tags)
 
@@ -364,9 +358,8 @@ defmodule Mortar.Media do
   @spec query(Query.t(), keyword()) :: {:ok, [t()]} | {:error, term()}
   def query(q, opts \\ [])
 
-  def query("", opts) do
-    query("__all__", opts)
-  end
+  def query("", opts), do: query("__all__", opts)
+  def query(nil, opts), do: query("__all__", opts)
 
   def query(query, opts) do
     offset = opts[:offset] || 0

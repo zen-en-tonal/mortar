@@ -5,6 +5,7 @@ defmodule Mortar.Tag do
   alias Mortar.TagSupervisor
   alias Mortar.TagIndex
   alias Mortar.Repo
+  alias Mortar.Event
 
   defstruct [:name, :bitmap_ref]
 
@@ -75,6 +76,25 @@ defmodule Mortar.Tag do
 
   def warm_all_tag() do
     TagWarming.queue_tag("__all__")
+  end
+
+  @doc """
+  Warms the tag synchronously by ensuring it is started and catching up to the latest events.
+  """
+  def warm_sync(tag_name) do
+    TagSupervisor.warm_tag(tag_name)
+  end
+
+  @spec add(binary(), integer() | binary()) :: :ok
+  def add(tag_name, media_id) do
+    Event.compose(:add_tag, tag_name, %{"media_id" => media_id})
+    |> Event.publish(tag_name)
+  end
+
+  @spec remove(binary(), integer() | binary()) :: :ok
+  def remove(tag_name, media_id) do
+    Event.compose(:remove_tag, tag_name, %{"media_id" => media_id})
+    |> Event.publish(tag_name)
   end
 
   @impl true
